@@ -20,6 +20,23 @@ pip install -r requirements.txt
 python src/main.py
 ```
 
+### オプション引数
+
+* --jockey_id [JOCKEY_ID] : 騎手IDを入力してください
+  * default: 00666 武豊
+* --horse_id [HORSE_ID] : 馬IDを入力してください
+  * default: 2017105319 エフフォーリア
+* --no_scraping : スクレイピングを行わない場合に指定
+  * default: True
+* --skip_scraping : データが存在する場合スクレイピングをスキップする場合に指定
+  * default: False
+
+例えば、ヘルプメッセージを表示するには以下のようにします：
+
+```bash
+python src/main.py --help
+```
+
 スクレイプしたデータはdataディレクトリに保存されます。
 
 ## テスト
