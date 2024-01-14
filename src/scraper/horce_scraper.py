@@ -41,7 +41,7 @@ class HorseScraper:
         '''
         directory = f'../data/horse/{horse_id}'
         # 保存されたHTMLを読み込む
-        with open(f'{directory}/{horse_id}.html', 'r') as f:
+        with open(f'{directory}/{horse_id}.html', 'r',encoding="utf-8") as f:
             html = f.read()
 
         # BeautifulSoupでHTMLをパースする
