@@ -27,10 +27,5 @@ build/
 .venv/
 
 # スクレイピングデータ
-/data/horse/
-/data/jockey/
-/data/race/
-
-# git
 /data/*
 !.gitkeep
