@@ -11,6 +11,7 @@ from utils import html_parser
 class JockeyScraper:
     def __init__(self, base_url):
         self.base_url = base_url
+        self.list_url = "https://db.netkeiba.com/jockey/"
         self.jockey_name = None
 
     def get_jockey_data(self, jockey_id,scraping=True):
@@ -64,6 +65,23 @@ class JockeyScraper:
                 break # 初回のみ処理を行う
 
         return row_data , jockey_name
+
+    def scrape_jockey_list(self):
+        # URLを作成
+        url = self.base_url
+
+        # URLからHTMLを取得
+        response = requests.get(url)
+        response.encoding = 'euc-jp'
+
+        # レスポンスのステータスコードが200以外の場合に例外を発生させる
+        response.raise_for_status()
+
+        # HTMLをパース
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # テーブル行を見つける
+        rows = soup.find_all('tr', class_='')
 
     def scrape_jockey_data(self, jockey_id, page=1):
 
