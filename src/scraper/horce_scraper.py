@@ -97,8 +97,10 @@ class HorseScraper:
         '''
         馬の情報を取得し、HTMLとデータを保存する。
         '''
+        # フラグに応じてスクレイピングを実行
         if scraping:
             html = self.scrape_horse_data(horse_id)
+        # スクレイピングをスキップする場合は、保存されたHTMLを読み込む
         if skip_scraping:
             # もしhorce_id.htmlが存在する場合はスクレイピングをスキップ
             directory = f'../data/horse/{horse_id}'
@@ -106,6 +108,7 @@ class HorseScraper:
                 html = None
             else:
                 html = self.scrape_horse_data(horse_id)
+        # 保存されたデータをパース
         data = self.parse_horse_data(horse_id)
 
         return data
