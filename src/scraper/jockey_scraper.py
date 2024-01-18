@@ -1,10 +1,12 @@
 import re
+import time
 import requests
 import math
 import os
 import pandas as pd
 from tqdm import tqdm
 from bs4 import BeautifulSoup
+from requests.exceptions import Timeout
 
 
 class JockeyScraper:
@@ -18,6 +20,39 @@ class JockeyScraper:
         # param : スクレイピングを実行した日付
         self.jockey_id_list_file = '../data/jockey/jockey_id_list/{}.csv'
         self.last_page_file = '../data/jockey/last_page_{}.txt'
+
+    def get_all_jockey_idlist(self, active=2):
+        '''
+            騎手のIDリストを取得する。
+
+            param:
+                active (int): 騎手の状態を指定します。
+                                    0は引退
+                                    1は現役
+                                    2はすべて
+
+            return:
+                list: 騎手のIDリスト。
+        '''
+        try:
+            # jockey_id_list_fileディレクトリが一つ以上存在するか確認
+            dir = os.path.dirname(self.jockey_id_list_file)
+            if len(os.listdir(dir)) == 0:
+                # ディレクトリが存在しない場合はscrap_all_jockey_idlistを実行
+                self.scrape_all_jockey_idlist(update=True)
+
+            # jockey_id_list_fileディレクトリ内の一番最新の日付のファイル名を取得
+            latest_date = os.path.splitext(
+                os.path.basename(max(os.listdir(dir))))[0]
+
+            # csvファイルを開きjockey_idをリストで取得する
+            df = pd.read_csv(self.jockey_id_list_file.format(latest_date))
+            jockey_id_list = df['jockey_id'].tolist()
+
+        except Exception as e:
+            print(f'エラーが発生しました。{e}')
+            return None
+        return jockey_id_list
 
     def get_jockey_data(self, jockey_id, scraping=True):
         data, self.jockey_name = self.get_jockey_record_totals(jockey_id)
@@ -131,26 +166,33 @@ class JockeyScraper:
                     print(f'{os.path.dirname(list_file)}を作成します。')
                     os.makedirs(os.path.dirname(list_file))
 
+                # ファイルが存在しupdateする場合は保管しているリストを削除
+                if os.path.exists(list_file) and update:
+                    if os.path.exists(list_file):
+                        os.remove(list_file)
+
                 # ファイルが存在していない場合はヘッダーを付ける
                 if not os.path.exists(list_file):
                     pd.DataFrame(columns=[
-                        'jockey_id', 'jockey_name', 'active']).to_csv(list_file)
-
-                # ファイルが存在しupdateする場合は保管しているリストを削除
-                elif os.path.exists(list_file) and update:
-                    if os.path.exists(list_file):
-                        os.remove(list_file)
+                        'jockey_id', 'jockey_name', 'active']).to_csv(list_file, index=False)
 
                 while True:
                     # 開始時刻からの経過時間を取得
                     elapsed_time = pd.Timestamp.now() - start_time
+                    # 1秒待機
+                    time.sleep(1)
                     # 経過時間が5分を超えた場合は処理を中断
                     if elapsed_time.seconds > 300:
                         raise Exception('処理がタイムアウトしました。')
                     # URLからHTMLを取得
-                    response = requests.get(url)
-                    response.encoding = 'euc-jp'  # エンコーディングをeuc-jpに設定
-                    response.raise_for_status()  # ステータスコードが200以外の場合に例外を発生させる
+                    try:
+                        # タイムアウトを設定
+                        response = requests.get(url, timeout=(3.0, 5))
+                        response.encoding = 'euc-jp'  # エンコーディングをeuc-jpに設定
+                    except Timeout:
+                        # ループの処理時間を超えない限りループを続ける
+                        print('タイムアウトしました。')
+                        continue
 
                     # HTMLをパース
                     soup = BeautifulSoup(response.text, 'html.parser')
@@ -191,13 +233,14 @@ class JockeyScraper:
 
                     # リスト内包表記を使って書くと以下のようになる
                     # 実行速度計測のためにコメントアウト
+                    # 内包表記にしても早くなるどころか遅い
                     # jockey_data = [(columns[0].find('a').get('href').replace('/jockey/result/recent/', '').strip('/'), columns[0].text)
                     #                for row in table.find_all('tr') for columns in [row.find_all('td')] if len(columns) > 0]
 
                     # データをcsv形式で保存
                     # 存在チェックはwhile前に行う
                     pd.DataFrame(jockey_data).to_csv(
-                        list_file, header=False, mode='a')
+                        list_file, index=False, header=False, mode='a')
 
                     # バーを更新
                     pbar.update(1)
